@@ -1,9 +1,9 @@
+use clap::Parser;
 use evdev::{Device, EventType, Key};
 use inotify::{EventMask, Inotify, WatchMask};
 use std::collections::HashMap;
 use std::io::ErrorKind;
-
-const PUSH_TO_TALK_KEY: Key = Key::KEY_CAPSLOCK;
+use std::str::FromStr;
 
 fn get_devices() -> Vec<String> {
     let paths = std::fs::read_dir("/dev/input").unwrap();
@@ -84,12 +84,14 @@ impl PushToTalk {
 
 struct PushToTalkManager {
     listener: HashMap<String, std::thread::JoinHandle<PushToTalk>>,
+    key: Key,
 }
 
 impl PushToTalkManager {
-    fn new() -> Self {
+    fn new(key: Key) -> Self {
         Self {
             listener: HashMap::new(),
+            key,
         }
     }
     fn on_new_device(&mut self, name: String) {
@@ -104,7 +106,7 @@ impl PushToTalkManager {
                 {
                     return;
                 }
-                let mut ptt = PushToTalk::new(d, PUSH_TO_TALK_KEY);
+                let mut ptt = PushToTalk::new(d, self.key);
 
                 let thread = std::thread::spawn(move || {
                     ptt.listen();
@@ -153,12 +155,27 @@ impl PushToTalkManager {
     }
 }
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Specify the key to use. Most keys have the form KEY_<NAME>
+    #[arg(short, long, default_value = "KEY_CAPSLOCK")]
+    key: String,
+}
+
 fn main() {
-    let mut manager = PushToTalkManager::new();
-    println!("Starting global PTT");
-    let device_names = get_devices();
-    for device_name in device_names {
-        manager.on_new_device(device_name);
+    let cli = Cli::parse();
+    let key_res = Key::from_str(&cli.key);
+    match key_res {
+        Ok(key) => {
+            let mut manager = PushToTalkManager::new(key);
+            println!("Starting global PTT with key {:?}", key);
+            let device_names = get_devices();
+            for device_name in device_names {
+                manager.on_new_device(device_name);
+            }
+            manager.watch_inputs();
+        }
+        Err(e) => println!("Prodived an invalid key: {:?}", e),
     }
-    manager.watch_inputs();
 }
