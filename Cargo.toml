@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
-evdev = "0.12.1"
+evdev = "0.12.2"
 inotify = "0.10.2"
