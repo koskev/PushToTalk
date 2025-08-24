@@ -1,5 +1,5 @@
 use clap::Parser;
-use evdev::{Device, EventType, Key};
+use evdev::{Device, EventType, KeyCode};
 use inotify::{EventMask, Inotify, WatchMask};
 use std::collections::HashMap;
 use std::io::ErrorKind;
@@ -24,11 +24,11 @@ fn get_devices() -> Vec<String> {
 
 struct PushToTalk {
     device: Device,
-    push_to_talk_key: Key,
+    push_to_talk_key: KeyCode,
 }
 
 impl PushToTalk {
-    fn new(device: Device, key: Key) -> Self {
+    fn new(device: Device, key: KeyCode) -> Self {
         println!("Adding new listener for {}", device.name().unwrap());
         Self {
             device,
@@ -45,7 +45,7 @@ impl PushToTalk {
                     for event in events {
                         if event.event_type() == EventType::KEY {
                             //println!("Got event val {} {}", event.value(), event.code());
-                            let pressed_key = Key::new(event.code());
+                            let pressed_key = KeyCode::new(event.code());
                             PushToTalk::handle_key(
                                 &self.push_to_talk_key,
                                 &pressed_key,
@@ -63,7 +63,7 @@ impl PushToTalk {
         }
     }
 
-    fn handle_key(ptt_key: &Key, key: &Key, value: i32) {
+    fn handle_key(ptt_key: &KeyCode, key: &KeyCode, value: i32) {
         //println!("Handling key {}, ppt key {}", key.0, PUSH_TO_TALK_KEY.0);
         if *key == *ptt_key {
             if value == 1 {
@@ -84,11 +84,11 @@ impl PushToTalk {
 
 struct PushToTalkManager {
     listener: HashMap<String, std::thread::JoinHandle<PushToTalk>>,
-    key: Key,
+    key: KeyCode,
 }
 
 impl PushToTalkManager {
-    fn new(key: Key) -> Self {
+    fn new(key: KeyCode) -> Self {
         Self {
             listener: HashMap::new(),
             key,
@@ -165,7 +165,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    let key_res = Key::from_str(&cli.key);
+    let key_res = KeyCode::from_str(&cli.key);
     match key_res {
         Ok(key) => {
             let mut manager = PushToTalkManager::new(key);
