@@ -19,7 +19,7 @@ fn get_devices() -> Vec<String> {
             vec.push(filename.to_string());
         }
     }
-    return vec;
+    vec
 }
 
 struct PushToTalk {
@@ -128,7 +128,8 @@ impl PushToTalkManager {
         // Setup inotify listener
         let mut inotify = Inotify::init().expect("Error while initializing inotify instance");
         inotify
-            .add_watch("/dev/input", WatchMask::DELETE | WatchMask::ATTRIB)
+            .watches()
+            .add("/dev/input", WatchMask::DELETE | WatchMask::ATTRIB)
             .expect("Failed to add file watch");
 
         let mut buffer = [0; 1024];
