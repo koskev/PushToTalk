@@ -16,7 +16,7 @@ jobs:
       with:
         hatchet-protocol: rampage
     - name: Install nix
-      uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
+      uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - run: nix develop . --command cargo clippy -- --deny "warnings"
